@@ -1,0 +1,90 @@
+// still have questions, how to deal with two numbers equal situations
+/*
+Given two arrays of length m and n with digits 0-9 representing two numbers. Create the maximum number of length k <= m + n from digits of the two. The relative order of the digits from the same array must be preserved. Return an array of the k digits.
+
+Note: You should try to optimize your time and space complexity.
+
+Example 1:
+
+Input:
+nums1 = [3, 4, 6, 5]
+nums2 = [9, 1, 2, 5, 8, 3]
+k = 5
+Output:
+[9, 8, 6, 5, 3]
+Example 2:
+
+Input:
+nums1 = [6, 7]
+nums2 = [6, 0, 4]
+k = 5
+Output:
+[6, 7, 6, 0, 4]
+Example 3:
+
+Input:
+nums1 = [3, 9]
+nums2 = [8, 9]
+k = 3
+Output:
+[9, 8, 9]
+*/
+class Solution {
+    public int[] maxNumber(int[] nums1, int[] nums2, int k) {
+        int count =0;
+        int lenA = nums1.length;
+        int lenB = nums2.length;
+        int[] res = new int[k];
+        int ai =-1;
+        int bj =-1;  
+        int Amax = 0;
+        int Asel = 0;
+        int Bmax = 0;
+        int Bsel = 0;
+        while(count<k){
+            int rlen = k-count-1;
+            int rB = lenB-(bj+1);
+            int rA = lenA-(ai+1);
+            int EndA = lenA-1-((rlen-rB)<0?0:rlen-rB);
+            int EndB = lenB-1-((rlen-rA)<0?0:rlen-rA);
+            if(ai+1 < lenA){
+                Amax = nums1[ai+1];
+                Asel = ai+1;
+                for(int i =ai+1;i<=EndA;i++){
+                   if(nums1[i]>Amax){
+                       Asel = i;
+                       Amax = nums1[i];
+                   }
+                }
+            }
+            if(bj+1<lenB){
+                Bmax = nums2[bj+1];
+                Bsel = bj+1;
+                for(int j = bj+1;j<=EndB;j++){
+                    if(nums2[j]>Bmax){
+                       Bsel = j;
+                       Bmax = nums2[j];
+                   }
+                }
+            }
+            
+            if(Amax <Bmax){
+                bj = Bsel;
+                res[count]=Bmax;
+                System.out.println("bj: "+bj+" count: "+ count );
+                count++;
+            }else if(Amax==Bmax){
+               
+            }else{
+                ai = Asel;
+                System.out.println("ai: "+ai+" count: "+ count );
+                res[count]=Amax;
+                count++;
+            }
+            Amax = Integer.MIN_VALUE;
+            Bmax = Integer.MIN_VALUE;
+            
+        }
+        return res;
+    }
+}
