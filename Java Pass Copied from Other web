@@ -1,0 +1,137 @@
+Introduction
+
+This page is gradually growing as the topic comes up more and more often on the Java newsgroups. It is now in three sections:
+My own answer (directly below)
+Dale King's formal analysis
+Chris Smith's "workaround" post which lists some of the ways of avoiding needing pass-by-reference semantics in the first place
+Parameter passing in Java - by reference or by value?
+
+This is another common question on Java newsgroups, made worse by the fact that people who should know better still perpetuate the following myth:
+Myth: "Objects are passed by reference, primitives are passed by value"
+
+Some proponents of this then say, "Ah, except for immutable objects which are passed by value [etc]" which introduces loads of rules without really tackling how Java works. Fortunately the truth is much simpler:
+
+Truth #1: Everything in Java is passed by value. Objects, however, are never passed at all.
+
+That needs some explanation - after all, if we can't pass objects, how can we do any work? The answer is that we pass references to objects. That sounds like it's getting dangerously close to the myth, until you look at truth #2:
+
+Truth #2: The values of variables are always primitives or references, never objects.
+
+This is probably the single most important point in learning Java properly. It's amazing how far you can actually get without knowing it, in fact - but vast numbers of things suddenly make sense when you grasp it.
+
+Why is all this important?
+
+When people hear the words "pass by reference", they may understand different things by the words. There are some pretty specific definitions of what it should mean, however. Dale King sometimes quotes this one: "The lvalue of the formal parameter is set to the lvalue of the actual parameter." (Dale's formal analysis of this whole question can be found at the bottom of this page.) This would mean that if you wrote the following code:
+Object x = null;
+giveMeAString (x);
+System.out.println (x);
+[...]
+
+void giveMeAString (Object y)
+{
+    y = "This is a string";
+}
+the result (if Java used pass-by-reference semantics) would be
+
+This is a string
+instead of the actual result:
+
+null
+Explaining the two truths above eliminates all of this confusion.
+
+So what does passing a reference by value actually mean?
+
+It means you can think of references how you think of primitives, to a large extent. For instance, the equivalent to the above bit of code using primitives would be:
+int x = 0;
+giveMeATen (x);
+System.out.println (x);
+[...]
+
+void giveMeATen (int y)
+{
+    y = 10;
+}
+Now, the above doesn't print out "10". Why not? Because the value "0" was passed into the method giveMeTen, not the variable itself. Exactly the same is true of reference variables - the value of the reference is passed in, not the variable itself. It's the same kind of copying that happens on variable assignment. The first code snippet, if inlined, is equivalent to:
+// Before the method call
+Object x = null;
+// Start of method call - parameter copying
+Object y = x;
+// Body of method call
+y = "This is a piece of string.";
+// End of method call
+System.out.println (x);
+If you want to think pictorially, you might find my "objects are balloons, references are pieces of string" analogy helpful.
+
+The balloon analogy
+
+I imagine every object as a helium balloon, every reference as a piece of string, and every variable as something which can hold onto a piece of string. If the reference is a null reference, that's like having a piece of string without anything attached to the end. If it's a reference to a genuine object, it's a piece of string tied onto the balloon representing that object. When a reference is copied (either for variable assignment or as part of a method call) it's as if another piece of string is created attached to whatever the first piece of string is attached to. The actual piece of string the variable (if any) is holding onto doesn't go anywhere - it's only copied.
+This analogy also explains garbage collection (apart from the java.lang.ref API, which does "odd" things :) - a balloon floats away unless it is tethered down to something. The balloons can have further holders on them (instance variables), but just because two balloons are holding onto each other doesn't stop them from floating away. (Cyclic references are collected.) Any balloon representing an object which is in the middle of having a method invoked is tethered to the JVM. (Apologies for not being able to phrase that more succinctly - all I mean is that anything in an active thread's stack isn't garbage collected.)
+
+A more formal analysis
+
+This excellent formal analysis of the question is courtesy of Dale King
+Question: Does Java pass objects by reference or by value?
+
+Answer:
+Since it makes no sense to begin any argument without agreed upon defintions let's formally define our terms. I will use abstract pseudocode to keep the issue from being clouded by the idiom of a particular language. The source of my information is the book "Advanced Programming Language Design" by Raphael A. Finkel.
+
+For those unfamiliar with the term below an L-value is an expression that can appear on the left side of an assignment statement. It is basically a way to address where a variable is stored. Variables and other ways to refer to locations in memory are L-values. Most expressions are not L-values, e.g. ( x * 2 )
+
+We assume the presence of a procedure named f that takes a formal parameter s. We call that function giving it an actual parameter g.
+
+The calling code:
+
+      f( g )
+The function:
+procedure f( s )
+begin
+  -- body of the procedure
+end;
+There are several parameter passing semantics that have been proposed or used:
+value
+The value of the actual parameter is copied into the formal parameter when the procedure is invoked. Any modification of the formal parameter affects only the formal parameter and not the actual parameter. This is the most common form of parameter passing and is the only one provided in C and Java.
+result
+The value of the formal parameter is copied into the actual parameter when the procedure returns. Modifications to the formal parameter do not affect the formal parameter until the function returns. The actual parameter must be an L-value. It is usually invalid to pass the same L-value to more than one result parameter, but the compiler cannot always detect this. The best example of this is out parameters in CORBA.
+value result
+Combination of value and result semantics. The best example of this are inout parameters in CORBA.
+reference
+The L-value of the formal parameter is set to the L-value of the actual parameter. In other words, the address of the formal parameter is the same as the address of the actual parameter. Any modifications to the formal parameter also immediately affect the actual parameter. FORTRAN only has reference mode (expressions are evaluated and stored in a temporary location in order to obtain an L-value). C++ has reference parameters by putting a & before the formal parameter name in the function header. Reference mode can be simulated in C using pointers and adding the & to the actual parameter and dereferencing the formal parameter within the function.
+readonly
+Can use either value or reference mode, but modification of the formal parameter is forbidden by the compiler.
+macro
+name
+These two have been used in the past, but are very much out of favor because they are confusing and difficult to implement. Therefore I won't bother trying to explain them.
+Now that we have some definitions of terms we can return to the question. Does Java pass objects by reference or by value?
+
+The answer is NO! The fact is that Java has no facility whatsoever to pass an object to any function! The reason is that Java has no variables that contain objects.
+
+The reason there is so much confusion is people tend to blur the distinction between an object reference variable and an object instance. All object instances in Java are allocated on the heap and can only be accessed through object references. So if I have the following:
+
+StringBuffer g = new StringBuffer( "Hello" );
+The variable g does not contain the string "Hello", it contains a reference (or pointer) to an object instance that contains the string "Hello".
+So if I then call f( g ), f is free to modify its formal parameter s to make it point to another StringBuffer or to set it to null. The function f could also modify the StringBuffer by appending " World" for instance. While this changes the value of that StringBuffer, the value of that StringBuffer is NOT the value of the actual parameter g.
+
+Imagine for instance if I set g to null before passing it to f. There is no StringBuffer now to modify and f can in no way change the value of g to be non-null.
+
+The bottom line is Java only has variables that hold primitives or object references. Both are passed by value.
+
+Ways to avoid needing pass-by-reference
+
+This section is courtesy of Chris Smith. (Updated by Jon Skeet.)
+There are good reasons that Java excluded the idea of pass-by-reference from its language design, and when writing Java applications it's best to do as Java does. There are elegant solutions to all common problems that may be solved with pass-by-reference in other languages. Before I get there, though, let's look at some of the problems of pass by reference.
+
+Pass by reference mixes inputs and outputs of code. This is the fundamental problem with the technique. In Java, a programmer can assume that variables will not change their value when passed as parameters to a method. In languages with pass by reference semantics, this basic assumption cannot be made.
+
+Pass by reference confuses the interface to a method. Methods written using pass-by-reference semantics can have extremely complex interfaces that are difficult for client programmers to learn and understand. That said, you may be left with a situation where you feel the need to use pass-by-reference in an application. There are two major reasons to use pass by reference, and each has its own solution:
+
+First, pass by reference is used in many languages to reduce the costs of a method call, preventing the copying of large amounts of data. This is a non-issue in Java. The problem is solved by simply realizing that in Java, the values passed to a method are either primitive data or object references, which cannot be large enough to make this a real issue. Objects themselves can be very large, but are never passed to methods.
+
+Second, pass by reference allows the variable to be changed, and the changed value can be seen in client code. The solution here is to refactor the application to use the return value for this purpose. If a parameter is an "in-out" parameter, then its original value should be passed into the method and its result moved to the return value. The client code may then look like this:
+
+    a = someMethod(a); 
+This is the real reason why pass by reference is used in many cases - it allows a method to effectively have many return values. Java doesn't allow multiple "real" return values, and it doesn't allow pass by reference semantics which would be used in other single-return-value languages. However, here are some techniques to work around this:
+If any of your return values are status codes that indicate success or failure of the method, eliminate them immediately. Replace them with exception handling that throws an exception if the method does not complete successfully. The exception is a more standard way of handling error conditions, can be more expressive, and eliminates one of your return values.
+Find related groups of return values, and encapsulate them into objects that contain each piece of information as fields. The classes for these objects can be expanded to encapsulate their behavior later, to further improve the design of the code. Each set of related return values that you encapsulate into an object removes return values from the method by increasing the level of abstraction of the method's interface. For instance, instead of passing co-ordinates X and Y by reference to allow them to be returned, create a mutable Point class, pass an object reference by value, and update the object's values within the method.
+If you find yourself passing in an object and then returning a new version of that object, and the object is mutable, then consider moving the method to be a member of the class of the object that you were passing. This can improve the encapsulation of the design and simplify the interface.
+If, after all steps above, you are still left with multiple returns to a method, split the method into several different methods that each return a part of the answer. Using this set of methods from client code will be much clearer than one mega-method.
+Back to the main page.
