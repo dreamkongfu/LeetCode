@@ -10,3 +10,16 @@ toIndex – high endpoint (exclusive) of the subList, if exceed the bound, throw
 取 最后一个元素，toIndex = size()就可以了
 2.1 Sort 
 Collections.sort(list); 
+3. PriorityQueue
+自动sort
+PriorityQueue<Integer> maxHeap = new PriorityQueue<Integer>(k, Collections.reverseOrder());
+PriorityQueue<Integer> minHeap = new PriorityQueue<Integer>(k);
+--------------------- 
+作者：MebiuW 
+来源：CSDN 
+原文：https://blog.csdn.net/MebiuW/article/details/54408831 
+版权声明：本文为博主原创文章，转载请附上博文链接！
+maxHeap.peek()
+maxHeap.poll()
+maxHeap.add()
+maxHeap.remove()
