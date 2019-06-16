@@ -1,0 +1,4 @@
+1.Shallow Copy
+A “shallow copy” in Java is often referred to a copy of the pointer value of a object 
+ArrayList clone() method is used to create a shallow copy of the list. In the new list, only object references are copied.
+2.Deep Copy
