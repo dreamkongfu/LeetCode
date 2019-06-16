@@ -1,0 +1,12 @@
+1.String soft
+cs = s.toCharArray()
+Array.sort(cs)
+new String(cs)
+
+2.ArrayList sublist
+public List subList(int fromIndex, int toIndex)
+fromIndex – low endpoint (inclusive) of the subList
+toIndex – high endpoint (exclusive) of the subList, if exceed the bound, throw exception
+取 最后一个元素，toIndex = size()就可以了
+2.1 Sort 
+Collections.sort(list); 
