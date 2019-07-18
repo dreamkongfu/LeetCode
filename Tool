@@ -23,3 +23,16 @@ maxHeap.peek()
 maxHeap.poll()
 maxHeap.add()
 maxHeap.remove()
+4.TreeMap
+get()
+remove()
+firstKey();
+lastKey()
+rank by value 
+5.new Comparetor<T t>(){
+    @Override
+        public int compare(T t1, T t2){
+          return t1.compareTo(t2);
+        }
+}
+6.Collections.reverse(list);
