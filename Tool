@@ -36,3 +36,7 @@ rank by value
         }
 }
 6.Collections.reverse(list);
+7.Collections.binarySearch
+int index = Collections.binarySearch(al, 50,  
+                                  Collections.reverseOrder());
+
