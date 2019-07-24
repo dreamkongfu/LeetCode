@@ -1,0 +1,2134 @@
+[LeetCode] Edit Distance 编辑距离
+ 
+
+Given two words word1 and word2, find the minimum number of operations required to convert word1 to word2.
+
+You have the following 3 operations permitted on a word:
+
+Insert a character
+Delete a character
+Replace a character
+Example 1:
+
+Input: word1 = "horse", word2 = "ros"
+Output: 3
+Explanation: 
+horse -> rorse (replace 'h' with 'r')
+rorse -> rose (remove 'r')
+rose -> ros (remove 'e')
+Example 2:
+
+Input: word1 = "intention", word2 = "execution"
+Output: 5
+Explanation: 
+intention -> inention (remove 't')
+inention -> enention (replace 'i' with 'e')
+enention -> exention (replace 'n' with 'x')
+exention -> exection (replace 'n' with 'c')
+exection -> execution (insert 'u')
+ 
+我们通过观察可以发现，当word1[i] == word2[j]时，dp[i][j] = dp[i - 1][j - 1]，其他情况时，dp[i][j]是其左，左上，上的三个值中的最小值加1，其实这里的左，上，和左上，分别对应的增加，删除，修改操作，具体可以参见解法一种的讲解部分，那么可以得到状态转移方程为：
+
+dp[i][j] =      /    dp[i - 1][j - 1]                                                                   if word1[i - 1] == word2[j - 1]
+
+                  \    min(dp[i - 1][j - 1], min(dp[i - 1][j], dp[i][j - 1])) + 1            else
+class Solution {
+public:
+    int minDistance(string word1, string word2) {
+        int m = word1.size(), n = word2.size();
+        vector<vector<int>> dp(m + 1, vector<int>(n + 1));
+        for (int i = 0; i <= m; ++i) dp[i][0] = i;
+        for (int i = 0; i <= n; ++i) dp[0][i] = i;
+        for (int i = 1; i <= m; ++i) {
+            for (int j = 1; j <= n; ++j) {
+                if (word1[i - 1] == word2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1];
+                } else {
+                    dp[i][j] = min(dp[i - 1][j - 1], min(dp[i - 1][j], dp[i][j - 1])) + 1;
+                }
+            }
+        }
+        return dp[m][n];
+    }
+};
+[LeetCode] 85. Maximal Rectangle 最大矩形
+ 
+
+Given a 2D binary matrix filled with 0's and 1's, find the largest rectangle containing only 1's and return its area.
+
+Example:
+
+Input:
+[
+  ["1","0","1","0","0"],
+  ["1","0","1","1","1"],
+  ["1","1","1","1","1"],
+  ["1","0","0","1","0"]
+]
+Output: 6
+class Solution {
+public:
+    int maximalRectangle(vector<vector<char>>& matrix) {
+        if (matrix.empty() || matrix[0].empty()) return 0;
+        int res = 0, m = matrix.size(), n = matrix[0].size();
+        vector<int> height(n, 0), left(n, 0), right(n, n);
+        for (int i = 0; i < m; ++i) {
+            int cur_left = 0, cur_right = n;
+            for (int j = 0; j < n; ++j) {
+                if (matrix[i][j] == '1') {
+                    ++height[j];
+                    left[j] = max(left[j], cur_left);
+                } else {
+                    height[j] = 0;
+                    left[j] = 0;
+                    cur_left = j + 1;
+                }
+            }
+            for (int j = n - 1; j >= 0; --j) {
+                if (matrix[i][j] == '1') {
+                    right[j] = min(right[j], cur_right);
+                } else {
+                    right[j] = n;
+                    cur_right = j;
+                }
+                res = max(res, (right[j] - left[j]) * height[j]);
+            }
+        }
+        return res;
+    }
+};
+class Solution {
+public:
+    int maximalRectangle(vector<vector<char>>& matrix) {
+        if (matrix.empty() || matrix[0].empty()) return 0;
+        int res = 0, m = matrix.size(), n = matrix[0].size();
+        vector<vector<int>> h_max(m, vector<int>(n));
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (matrix[i][j] == '0') continue;
+                if (j > 0) h_max[i][j] = h_max[i][j - 1] + 1;
+                else h_max[i][0] = 1;
+            }
+        }
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (h_max[i][j] == 0) continue;
+                int mn = h_max[i][j];
+                res = max(res, mn);
+                for (int k = i - 1; k >= 0 && h_max[k][j] != 0; --k) {
+                    mn = min(mn, h_max[k][j]);
+                    res = max(res, mn * (i - k + 1));
+                }
+            }
+        }
+        return res;
+    }
+};
+[LeetCode] 95. Unique Binary Search Trees II 独一无二的二叉搜索树之二
+ 
+
+Given an integer n, generate all structurally unique BST's (binary search trees) that store values 1 ... n.
+
+Example:
+
+Input: 3
+Output:
+[
+  [1,null,3,2],
+  [3,2,null,1],
+  [3,1,null,null,2],
+  [2,1,3],
+  [1,null,2,null,3]
+]
+Explanation:
+The above output corresponds to the 5 unique BST's shown below:
+
+   1         3     3      2      1
+    \       /     /      / \      \
+     3     2     1      1   3      2
+    /     /       \                 \
+   2     1         2                 3
+ 
+ class Solution {
+public:
+    vector<TreeNode*> generateTrees(int n) {
+        if (n == 0) return {};
+        vector<vector<vector<TreeNode*>>> memo(n, vector<vector<TreeNode*>>(n));
+        return helper(1, n, memo);
+    }
+    vector<TreeNode*> helper(int start, int end, vector<vector<vector<TreeNode*>>>& memo) {
+        if (start > end) return {nullptr};
+        if (!memo[start - 1][end - 1].empty()) return memo[start - 1][end - 1];
+        vector<TreeNode*> res;
+        for (int i = start; i <= end; ++i) {
+            auto left = helper(start, i - 1, memo), right = helper(i + 1, end, memo);
+            for (auto a : left) {
+                for (auto b : right) {
+                    TreeNode *node = new TreeNode(i);
+                    node->left = a;
+                    node->right = b;
+                    res.push_back(node);
+                }
+            }
+        }
+        return memo[start - 1][end - 1] = res;
+    }
+};
+[LeetCode] Interleaving String 交织相错的字符串
+ 
+
+Given s1, s2, s3, find whether s3 is formed by the interleaving of s1 and s2.
+
+Example 1:
+
+Input: s1 = "aabcc", s2 = "dbbca", s3 = "aadbbcbcac"
+Output: true
+Example 2:
+
+Input: s1 = "aabcc", s2 = "dbbca", s3 = "aadbbbaccc"
+Output: false
+Ø d b b c a
+Ø T F F F F F
+a T F F F F F
+a T T T T T F
+b F T T F T F
+c F F T T T T
+c F F F T F T
+dp[i][j] = (dp[i - 1][j] && s1[i - 1] == s3[i - 1 + j]) || (dp[i][j - 1] && s2[j - 1] == s3[j - 1 + i]);
+class Solution {
+public:
+    bool isInterleave(string s1, string s2, string s3) {
+        if (s1.size() + s2.size() != s3.size()) return false;
+        int n1 = s1.size(), n2 = s2.size();
+        vector<vector<bool>> dp(n1 + 1, vector<bool> (n2 + 1)); 
+        dp[0][0] = true;
+        for (int i = 1; i <= n1; ++i) {
+            dp[i][0] = dp[i - 1][0] && (s1[i - 1] == s3[i - 1]);
+        }
+        for (int i = 1; i <= n2; ++i) {
+            dp[0][i] = dp[0][i - 1] && (s2[i - 1] == s3[i - 1]);
+        }
+        for (int i = 1; i <= n1; ++i) {
+            for (int j = 1; j <= n2; ++j) {
+                dp[i][j] = (dp[i - 1][j] && s1[i - 1] == s3[i - 1 + j]) || (dp[i][j - 1] && s2[j - 1] == s3[j - 1 + i]);
+            }
+        }
+        return dp[n1][n2];
+    }
+};
+[LeetCode] Triangle 三角形
+ 
+
+Given a triangle, find the minimum path sum from top to bottom. Each step you may move to adjacent numbers on the row below.
+
+For example, given the following triangle
+
+[
+     [2],
+    [3,4],
+   [6,5,7],
+  [4,1,8,3]
+]
+ 
+
+The minimum path sum from top to bottom is 11 (i.e., 2 + 3 + 5 + 1 = 11).
+
+Note:
+Bonus point if you are able to do this using only O(n) extra space, where n is the total number of rows in the triangle.
+triangle[i][j] = min(triangle[i - 1][j - 1], triangle[i - 1][j])
+class Solution {
+public:
+    int minimumTotal(vector<vector<int>>& triangle) {
+        vector<int> dp(triangle.back());
+        for (int i = (int)triangle.size() - 2; i >= 0; --i) {
+            for (int j = 0; j <= i; ++j) {
+                dp[j] = min(dp[j], dp[j + 1]) + triangle[i][j];
+            }
+        }
+        return dp[0];
+    }
+};
+[LeetCode] Word Ladder II 词语阶梯之二
+ 
+
+Given two words (beginWord and endWord), and a dictionary's word list, find all shortest transformation sequence(s) from beginWord to endWord, such that:
+
+Only one letter can be changed at a time
+Each transformed word must exist in the word list. Note that beginWord is not a transformed word.
+Note:
+
+Return an empty list if there is no such transformation sequence.
+All words have the same length.
+All words contain only lowercase alphabetic characters.
+You may assume no duplicates in the word list.
+You may assume beginWord and endWord are non-empty and are not the same.
+Example 1:
+
+Input:
+beginWord = "hit",
+endWord = "cog",
+wordList = ["hot","dot","dog","lot","log","cog"]
+
+Output:
+[
+  ["hit","hot","dot","dog","cog"],
+  ["hit","hot","lot","log","cog"]
+]
+Example 2:
+
+Input:
+beginWord = "hit"
+endWord = "cog"
+wordList = ["hot","dot","dog","lot","log"]
+
+Output: []
+
+Explanation: The endWord "cog" is not in wordList, therefore no possible transformation.
+class Solution {
+public:
+    vector<vector<string>> findLadders(string beginWord, string endWord, vector<string>& wordList) {
+        vector<vector<string>> res;
+        unordered_set<string> dict(wordList.begin(), wordList.end());
+        vector<string> p{beginWord};
+        queue<vector<string>> paths;
+        paths.push(p);
+        int level = 1, minLevel = INT_MAX;
+        unordered_set<string> words;
+        while (!paths.empty()) {
+            auto t = paths.front(); paths.pop();
+            if (t.size() > level) {
+                for (string w : words) dict.erase(w);
+                words.clear();
+                level = t.size();
+                if (level > minLevel) break;
+            }
+            string last = t.back();
+            for (int i = 0; i < last.size(); ++i) {
+                string newLast = last;
+                for (char ch = 'a'; ch <= 'z'; ++ch) {
+                    newLast[i] = ch;
+                    if (!dict.count(newLast)) continue;
+                    words.insert(newLast);
+                    vector<string> nextPath = t;
+                    nextPath.push_back(newLast);
+                    if (newLast == endWord) {
+                        res.push_back(nextPath);
+                        minLevel = level;
+                    } else paths.push(nextPath);
+                }
+            }
+        }
+        return res;
+    }
+};
+[LeetCode] Palindrome Partitioning II 拆分回文串之二
+ 
+
+Given a string s, partition s such that every substring of the partition is a palindrome.
+
+Return the minimum cuts needed for a palindrome partitioning of s.
+
+Example:
+
+Input: "aab"
+Output: 1
+Explanation: The palindrome partitioning ["aa","b"] could be produced using 1 cut.
+ class Solution {
+public:
+    int minCut(string s) {
+        if (s.empty()) return 0;
+        int n = s.size();
+        vector<vector<bool>> p(n, vector<bool>(n));
+        vector<int> dp(n);
+        for (int i = 0; i < n; ++i) {
+            dp[i] = i;
+            for (int j = 0; j <= i; ++j) {
+                if (s[i] == s[j] && (i - j < 2 || p[j + 1][i - 1])) {
+                    p[j][i] = true;
+                    dp[i] = (j == 0) ? 0 : min(dp[i], dp[j - 1] + 1);
+                }
+            }
+        }
+        return dp[n - 1];
+    }
+};
+[LeetCode] Word Break II 拆分词句之二
+ 
+
+Given a non-empty string s and a dictionary wordDict containing a list of non-empty words, add spaces in s to construct a sentence where each word is a valid dictionary word. Return all such possible sentences.
+
+Note:
+
+The same word in the dictionary may be reused multiple times in the segmentation.
+You may assume the dictionary does not contain duplicate words.
+Example 1:
+
+Input:
+s = "catsanddog"
+wordDict = ["cat", "cats", "and", "sand", "dog"]
+Output:
+[
+  "cats and dog",
+  "cat sand dog"
+]
+Example 2:
+
+Input:
+s = "pineapplepenapple"
+wordDict = ["apple", "pen", "applepen", "pine", "pineapple"]
+Output:
+[
+  "pine apple pen apple",
+  "pineapple pen apple",
+  "pine applepen apple"
+]
+Explanation: Note that you are allowed to reuse a dictionary word.
+Example 3:
+
+Input:
+s = "catsandog"
+wordDict = ["cats", "dog", "sand", "and", "cat"]
+Output:
+[]
+class Solution {
+public:
+    vector<string> wordBreak(string s, vector<string>& wordDict) {
+        unordered_map<string, vector<string>> m;
+        return helper(s, wordDict, m);
+    }
+    vector<string> helper(string s, vector<string>& wordDict, unordered_map<string, vector<string>>& m) {
+        if (m.count(s)) return m[s];
+        if (s.empty()) return {""};
+        vector<string> res;
+        for (string word : wordDict) {
+            if (s.substr(0, word.size()) != word) continue;
+            vector<string> rem = helper(s.substr(word.size()), wordDict, m);
+            for (string str : rem) {
+                res.push_back(word + (str.empty() ? "" : " ") + str);
+            }
+        }
+        return m[s] = res;
+    }
+};
+[LeetCode] One Edit Distance 一个编辑距离
+ 
+
+Given two strings S and T, determine if they are both one edit distance apart.
+
+ 
+
+这道题是之前那道Edit Distance的拓展，然而这道题并没有那道题难，这道题只让我们判断两个字符串的编辑距离是否为1，那么我们只需分下列三种情况来考虑就行了：
+
+1. 两个字符串的长度之差大于1，那么直接返回False
+
+2. 两个字符串的长度之差等于1，那么长的那个字符串去掉一个字符，剩下的应该和短的字符串相同
+
+3. 两个字符串的长度之差等于0，那么两个字符串对应位置的字符只能有一处不同。
+
+分析清楚了所有的情况，代码就很好写了，参见如下：
+class Solution {
+public:
+    bool isOneEditDistance(string s, string t) {
+        for (int i = 0; i < min(s.size(), t.size()); ++i) {
+            if (s[i] != t[i]) {
+                if (s.size() == t.size()) return s.substr(i + 1) == t.substr(i + 1);
+                else if (s.size() < t.size()) return s.substr(i) == t.substr(i + 1);
+                else return s.substr(i + 1) == t.substr(i);
+            }
+        }
+        return abs((int)s.size() - (int)t.size()) == 1;
+    }
+};
+[LeetCode] Burst Balloons 打气球游戏
+ 
+
+Given n balloons, indexed from 0 to n-1. Each balloon is painted with a number on it represented by array nums. You are asked to burst all the balloons. If the you burst balloon iyou will get nums[left] * nums[i] * nums[right]coins. Here left and right are adjacent indices of i. After the burst, the left and right then becomes adjacent.
+
+Find the maximum coins you can collect by bursting the balloons wisely.
+
+Note:
+
+You may imagine nums[-1] = nums[n] = 1. They are not real therefore you can not burst them.
+0 ≤ n ≤ 500, 0 ≤ nums[i] ≤ 100
+Example:
+
+Input: [3,1,5,8]
+Output: 167 
+Explanation: nums = [3,1,5,8] --> [3,5,8] -->   [3,8]   -->  [8]  --> []
+             coins =  3*1*5      +  3*5*8    +  1*3*8      + 1*8*1   = 167
+Credits:
+Special thanks to @peisi for adding this problem and creating all test cases.
+class Solution {
+public:
+    int maxCoins(vector<int>& nums) {
+        int n = nums.size();
+        nums.insert(nums.begin(), 1);
+        nums.push_back(1);
+        vector<vector<int>> dp(n + 2, vector<int>(n + 2, 0));
+        for (int len = 1; len <= n; ++len) {
+            for (int i = 1; i <= n - len + 1; ++i) {
+                int j = i + len - 1;
+                for (int k = i; k <= j; ++k) {
+                    dp[i][j] = max(dp[i][j], nums[i - 1] * nums[k] * nums[j + 1] + dp[i][k - 1] + dp[k + 1][j]);
+                }
+            }
+        }
+        return dp[1][n];
+    }
+};
+[LeetCode] Count of Range Sum 区间和计数
+ 
+
+Given an integer array nums, return the number of range sums that lie in [lower, upper] inclusive.
+Range sum S(i, j) is defined as the sum of the elements in nums between indices i and j (i ≤ j), inclusive.
+
+Note:
+A naive algorithm of O(n2) is trivial. You MUST do better than that.
+
+Example:
+Given nums = [-2, 5, -1], lower = -2, upper = 2,
+Return 3.
+The three ranges are : [0, 0], [2, 2], [0, 2] and their respective sums are: -2, -1, 2.
+
+Credits:
+Special thanks to @dietpepsi for adding this problem and creating all test cases.
+
+class Solution {
+public:
+    int countRangeSum(vector<int>& nums, int lower, int upper) {
+        int res = 0;
+        long long sum = 0;
+        multiset<long long> sums;
+        sums.insert(0);
+        for (int i = 0; i < nums.size(); ++i) {
+            sum += nums[i];
+            res += distance(sums.lower_bound(sum - upper), sums.upper_bound(sum - lower));
+            sums.insert(sum);
+        }
+        return res;
+    }        
+};
+[LeetCode] Android Unlock Patterns 安卓解锁模式
+ 
+
+Given an Android 3x3 key lock screen and two integers m and n, where 1 ≤ m ≤ n ≤ 9, count the total number of unlock patterns
+of the Android lock screen, which consist of minimum of m keys and maximum n keys.
+
+Rules for a valid pattern:
+
+Each pattern must connect at least m keys and at most n keys.
+All the keys must be distinct.
+If the line connecting two consecutive keys in the pattern passes through any other keys, the other keys must have previously 
+selected in the pattern. No jumps through non selected key is allowed.
+The order of keys used matters.
+ 
+
+
+
+Explanation:
+
+| 1 | 2 | 3 |
+| 4 | 5 | 6 |
+| 7 | 8 | 9 |
+ 
+
+Invalid move: 4 - 1 - 3 - 6 
+Line 1 - 3 passes through key 2 which had not been selected in the pattern.
+
+Invalid move: 4 - 1 - 9 - 2
+Line 1 - 9 passes through key 5 which had not been selected in the pattern.
+
+Valid move: 2 - 4 - 1 - 3 - 6
+Line 1 - 3 is valid because it passes through key 2, which had been selected in the pattern
+
+Valid move: 6 - 5 - 4 - 1 - 9 - 2
+Line 1 - 9 is valid because it passes through key 5, which had been selected in the pattern.
+
+Example:
+Given m = 1, n = 1, return 9.
+
+Credits:
+Special thanks to @elmirap for adding this problem and creating all test cases.
+class Solution {
+public:
+    int numberOfPatterns(int m, int n) {
+        int res = 0;
+        vector<bool> visited(10, false);
+        vector<vector<int>> jumps(10, vector<int>(10, 0));
+        jumps[1][3] = jumps[3][1] = 2;
+        jumps[4][6] = jumps[6][4] = 5;
+        jumps[7][9] = jumps[9][7] = 8;
+        jumps[1][7] = jumps[7][1] = 4;
+        jumps[2][8] = jumps[8][2] = 5;
+        jumps[3][9] = jumps[9][3] = 6;
+        jumps[1][9] = jumps[9][1] = jumps[3][7] = jumps[7][3] = 5;
+        res += helper(1, 1, 0, m, n, jumps, visited) * 4;
+        res += helper(2, 1, 0, m, n, jumps, visited) * 4;
+        res += helper(5, 1, 0, m, n, jumps, visited);
+        return res;
+    }
+    int helper(int num, int len, int res, int m, int n, vector<vector<int>> &jumps, vector<bool> &visited) {
+        if (len >= m) ++res;
+        ++len;
+        if (len > n) return res;
+        visited[num] = true;
+        for (int next = 1; next <= 9; ++next) {
+            int jump = jumps[num][next];
+            if (!visited[next] && (jump == 0 || visited[jump])) {
+                res = helper(next, len, res, m, n, jumps, visited);
+            }
+        }
+        visited[num] = false;
+        return res;
+    }
+};
+[LeetCode] Russian Doll Envelopes 俄罗斯娃娃信封
+ 
+
+You have a number of envelopes with widths and heights given as a pair of integers (w, h). One envelope can fit into another if and only if both the width and height of one envelope is greater than the width and height of the other envelope.
+
+What is the maximum number of envelopes can you Russian doll? (put one inside other)
+
+Example:
+Given envelopes = [[5,4],[6,4],[6,7],[2,3]], the maximum number of envelopes you can Russian doll is 3 ([2,3] => [5,4] => [6,7]).
+dp[i] = max(dp[i], dp[j] + 1)
+class Solution {
+public:
+    int maxEnvelopes(vector<pair<int, int>>& envelopes) {
+        int res = 0, n = envelopes.size();
+        vector<int> dp(n, 1);
+        sort(envelopes.begin(), envelopes.end());
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < i; ++j) {
+                if (envelopes[i].first > envelopes[j].first && envelopes[i].second > envelopes[j].second) {
+                    dp[i] = max(dp[i], dp[j] + 1);
+                }
+            }
+            res = max(res, dp[i]);
+        }
+        return res;
+    }
+};
+class Solution {
+public:
+    int maxEnvelopes(vector<pair<int, int>>& envelopes) {
+        vector<int> dp;
+        sort(envelopes.begin(), envelopes.end(), [](const pair<int, int> &a, const pair<int, int> &b){
+            if (a.first == b.first) return a.second > b.second;
+            return a.first < b.first;
+        });
+        for (int i = 0; i < envelopes.size(); ++i) {
+            int left = 0, right = dp.size(), t= envelopes[i].second;
+            while (left < right) {
+                int mid = left + (right - left) / 2;
+                if (dp[mid] < t) left = mid + 1;
+                else right = mid;
+            }
+            if (right >= dp.size()) dp.push_back(t);
+            else dp[right] = t;
+        }
+        return dp.size();
+    }
+};
+[LeetCode] Bomb Enemy 炸弹人
+ 
+
+Given a 2D grid, each cell is either a wall 'W', an enemy 'E' or empty '0' (the number zero), return the maximum enemies you can kill using one bomb.
+The bomb kills all the enemies in the same row and column from the planted point until it hits the wall since the wall is too strong to be destroyed.
+Note that you can only put the bomb at an empty cell.
+
+Example:
+For the given grid
+
+0 E 0 0
+E 0 W E
+0 E 0 0
+
+return 3. (Placing a bomb at (1,1) kills 3 enemies)
+class Solution {
+public:
+    int maxKilledEnemies(vector<vector<char>>& grid) {
+        if (grid.empty() || grid[0].empty()) return 0;
+        int m = grid.size(), n = grid[0].size(), res = 0, rowCnt, colCnt[n];
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (j == 0 || grid[i][j - 1] == 'W') {
+                    rowCnt = 0;
+                    for (int k = j; k < n && grid[i][k] != 'W'; ++k) {
+                        rowCnt += grid[i][k] == 'E';
+                    }
+                }
+                if (i == 0 || grid[i - 1][j] == 'W') {
+                    colCnt[j] = 0;
+                    for (int k = i; k < m && grid[k][j] != 'W'; ++k) {
+                        colCnt[j] += grid[k][j] == 'E';
+                    }
+                }
+                if (grid[i][j] == '0') {
+                    res = max(res, rowCnt + colCnt[j]);
+                }
+            }
+        }
+        return res;
+    }
+};
+class Solution {
+public:
+    int maxKilledEnemies(vector<vector<char>>& grid) {
+        if (grid.empty() || grid[0].empty()) return 0;
+        int m = grid.size(), n = grid[0].size(), res = 0;
+        vector<vector<int>> v1(m, vector<int>(n, 0)), v2 = v1, v3 = v1, v4 = v1;
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                int t = (j == 0 || grid[i][j] == 'W') ? 0 : v1[i][j - 1];
+                v1[i][j] = grid[i][j] == 'E' ? t + 1 : t;
+            }
+            for (int j = n - 1; j >= 0; --j) {
+                int t = (j == n - 1 || grid[i][j] == 'W') ? 0 : v2[i][j + 1];
+                v2[i][j] = grid[i][j] == 'E' ? t + 1 : t;
+            }
+        }
+        for (int j = 0; j < n; ++j) {
+            for (int i = 0; i < m; ++i) {
+                int t = (i == 0 || grid[i][j] == 'W') ? 0 : v3[i - 1][j];
+                v3[i][j] = grid[i][j] == 'E' ? t + 1 : t;
+            }
+            for (int i = m - 1; i >= 0; --i) {
+                int t = (i == m - 1 || grid[i][j] == 'W') ? 0 : v4[i + 1][j];
+                v4[i][j] = grid[i][j] == 'E' ? t + 1 : t;
+            }
+        }
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                if (grid[i][j] == '0') {
+                    res = max(res, v1[i][j] + v2[i][j] + v3[i][j] + v4[i][j]);
+                }
+            }
+        }
+        return res;
+    }
+};
+[LeetCode] Max Sum of Rectangle No Larger Than K 最大矩阵和不超过K
+ Given a non-empty 2D matrix matrix and an integer k, find the max sum of a rectangle in the matrix such that its sum is no larger than k.
+
+Example:
+
+Input: matrix = [[1,0,1],[0,-2,3]], k = 2
+Output: 2 
+Explanation: Because the sum of rectangle [[0, 1], [-2, 3]] is 2,
+             and 2 is the max number no larger than k (k = 2).
+Note:
+
+The rectangle inside the matrix must have an area > 0.
+What if the number of rows is much larger than the number of columns?
+class Solution {
+public:
+    int maxSumSubmatrix(vector<vector<int>>& matrix, int k) {
+        if (matrix.empty() || matrix[0].empty()) return 0;
+        int m = matrix.size(), n = matrix[0].size(), res = INT_MIN;
+        int sum[m][n];
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                int t = matrix[i][j];
+                if (i > 0) t += sum[i - 1][j];
+                if (j > 0) t += sum[i][j - 1];
+                if (i > 0 && j > 0) t -= sum[i - 1][j - 1];
+                sum[i][j] = t;
+                for (int r = 0; r <= i; ++r) {
+                    for (int c = 0; c <= j; ++c) {
+                        int d = sum[i][j];
+                        if (r > 0) d -= sum[r - 1][j];
+                        if (c > 0) d -= sum[i][c - 1];
+                        if (r > 0 && c > 0) d += sum[r - 1][c - 1];
+                        if (d <= k) res = max(res, d);
+                    }
+                }
+            }
+        }
+        return res;
+    }
+};
+class Solution {
+public:
+    int maxSumSubmatrix(vector<vector<int>>& matrix, int k) {
+        if (matrix.empty() || matrix[0].empty()) return 0;
+        int m = matrix.size(), n = matrix[0].size(), res = INT_MIN;
+        for (int i = 0; i < n; ++i) {
+            vector<int> sum(m);
+            for (int j = i; j < n; ++j) {
+                for (int k = 0; k < m; ++k) {
+                    sum[k] += matrix[k][j];
+                }
+                int curSum = 0;
+                set<int> st{{0}};
+                for (auto a : sum) {
+                    curSum += a;
+                    auto it = st.lower_bound(curSum - k);
+                    if (it != st.end()) res = max(res, curSum - *it);
+                    st.insert(curSum);
+                }
+            }
+        }
+        return res;
+    }
+};
+[LeetCode] Guess Number Higher or Lower II 猜数字大小之二
+We are playing the Guess Game. The game is as follows:
+
+ 
+
+I pick a number from 1 to n. You have to guess which number I picked.
+
+Every time you guess wrong, I'll tell you whether the number I picked is higher or lower.
+
+However, when you guess a particular number x, and you guess wrong, you pay $x. You win the game when you guess the number I picked.
+
+Example:
+
+n = 10, I pick 8.
+
+First round:  You guess 5, I tell you that it's higher. You pay $5.
+Second round: You guess 7, I tell you that it's higher. You pay $7.
+Third round:  You guess 9, I tell you that it's lower. You pay $9.
+
+Game over. 8 is the number I picked.
+
+You end up paying $5 + $7 + $9 = $21.
+ 
+
+Given a particular n ≥ 1, find out how much money you need to have to guarantee a win.
+
+Hint:
+
+The best strategy to play the game is to minimize the maximum loss you could possibly face. Another strategy is to minimize the expected loss. Here, we are interested in thefirst scenario.
+Take a small example (n = 3). What do you end up paying in the worst case?
+Check out this article if you're still stuck.
+The purely recursive implementation of minimax would be worthless for even a small n. You MUST use dynamic programming.
+As a follow-up, how would you modify your code to solve the problem of minimizing the expected loss, instead of the worst-case loss?
+class Solution {
+public:
+    int getMoneyAmount(int n) {
+        vector<vector<int>> dp(n + 1, vector<int>(n + 1, 0));
+        for (int i = 2; i <= n; ++i) {
+            for (int j = i - 1; j > 0; --j) {
+                int global_min = INT_MAX;
+                for (int k = j + 1; k < i; ++k) {
+                    int local_max = k + max(dp[j][k - 1], dp[k + 1][i]);
+                    global_min = min(global_min, local_max);
+                }
+                dp[j][i] = j + 1 == i ? j : global_min;
+            }
+        }
+        return dp[1][n];
+    }
+};
+class Solution {
+public:
+    int getMoneyAmount(int n) {
+        vector<vector<int>> memo(n + 1, vector<int>(n + 1, 0));
+        return helper(1, n, memo);
+    }
+    int helper(int start, int end, vector<vector<int>>& memo) {
+        if (start >= end) return 0;
+        if (memo[start][end] > 0) return memo[start][end];
+        int res = INT_MAX;
+        for (int k = start; k <= end; ++k) {
+            int t = k + max(helper(start, k - 1, memo), helper(k + 1, end, memo));
+            res = min(res, t);
+        }
+        return memo[start][end] = res;
+    }
+};
+[LeetCode] Is Subsequence 是子序列
+ 
+
+Given a string s and a string t, check if s is subsequence of t.
+
+You may assume that there is only lower case English letters in both s and t. t is potentially a very long (length ~= 500,000) string, and s is a short string (<=100).
+
+A subsequence of a string is a new string which is formed from the original string by deleting some (can be none) of the characters without disturbing the relative positions of the remaining characters. (ie, "ace" is a subsequence of "abcde" while "aec" is not).
+
+Example 1:
+s = "abc", t = "ahbgdc"
+
+Return true.
+
+Example 2:
+s = "axc", t = "ahbgdc"
+
+Return false.
+
+Follow up:
+If there are lots of incoming S, say S1, S2, ... , Sk where k >= 1B, and you want to check one by one to see if T has its subsequence.
+In this scenario, how would you change your code?
+class Solution {
+public:
+    bool isSubsequence(string s, string t) {
+        int i = 0;
+        for (int j = 0; j < t.size() && i < s.size(); ++j) {
+            if (s[i] == t[j]) ++i;
+        }
+        return i == s.size();
+    }
+};
+// Follow up
+class Solution {
+public:
+    bool isSubsequence(string s, string t) {
+        int pre = -1, n = t.size();
+        unordered_map<char, vector<int>> char2pos;
+        for (int i = 0; i < n; ++i) char2pos[t[i]].push_back(i);
+        for (char c : s) {
+            auto it = upper_bound(char2pos[c].begin(), char2pos[c].end(), pre);
+            if (it == char2pos[c].end()) return false;
+            pre = *it;
+        }
+        return true;
+    }
+};
+[LeetCode] Split Array Largest Sum 分割数组的最大值
+ 
+
+Given an array which consists of non-negative integers and an integer m, you can split the array into m non-empty continuous subarrays. Write an algorithm to minimize the largest sum among these m subarrays.
+
+Note:
+Given m satisfies the following constraint: 1 ≤ m ≤ length(nums) ≤ 14,000.
+
+Examples:
+
+Input:
+nums = [7,2,5,10,8]
+m = 2
+
+Output:
+18
+
+Explanation:
+There are four ways to split nums into two subarrays.
+The best way is to split it into [7,2,5] and [10,8],
+where the largest sum among the two subarrays is only 18.
+class Solution {
+public:
+    int splitArray(vector<int>& nums, int m) {
+        long long left = 0, right = 0;
+        for (int i = 0; i < nums.size(); ++i) {
+            left = max((int)left, nums[i]);
+            right += nums[i];
+        }
+        while (left < right) {
+            long long mid = left + (right - left) / 2;
+            if (can_split(nums, m, mid)) right = mid;
+            else left = mid + 1;
+        }
+        return left;
+    }
+    bool can_split(vector<int>& nums, int m, int sum) {
+        int cnt = 1, curSum = 0;
+        for (int i = 0; i < nums.size(); ++i) {
+            curSum += nums[i];
+            if (curSum > sum) {
+                curSum = nums[i];
+                ++cnt;
+                if (cnt > m) return false;
+            }
+        }
+        return true;
+    }
+};
+class Solution {
+public:
+    int splitArray(vector<int>& nums, int m) {
+        int n = nums.size();
+        vector<int> sums(n + 1, 0);
+        vector<vector<int>> dp(m + 1, vector<int>(n + 1, INT_MAX));
+        dp[0][0] = 0;
+        for (int i = 1; i <= n; ++i) {
+            sums[i] = sums[i - 1] + nums[i - 1];
+        }
+        for (int i = 1; i <= m; ++i) {
+            for (int j = 1; j <= n; ++j) {
+                for (int k = i - 1; k < j; ++k) {
+                    int val = max(dp[i - 1][k], sums[j] - sums[k]);
+                    dp[i][j] = min(dp[i][j], val);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+};
+[LeetCode] Encode String with Shortest Length 最短长度编码字符串
+Given a non-empty string, encode the string such that its encoded length is the shortest.
+
+The encoding rule is: k[encoded_string], where the encoded_string inside the square brackets is being repeated exactly k times.
+
+Note:
+k will be a positive integer and encoded string will not be empty or have extra space.
+You may assume that the input string contains only lowercase English letters. The string's length is at most 160.
+If an encoding process does not make the string shorter, then do not encode it. If there are several solutions, return any of them is fine.
+Example 1:
+
+Input: "aaa"
+Output: "aaa"
+Explanation: There is no way to encode it such that it is shorter than the input string, so we do not encode it.
+Example 2:
+
+Input: "aaaaa"
+Output: "5[a]"
+Explanation: "5[a]" is shorter than "aaaaa" by 1 character.
+Example 3:
+
+Input: "aaaaaaaaaa"
+Output: "10[a]"
+Explanation: "a9[a]" or "9[a]a" are also valid solutions, both of them have the same length = 5, which is the same as "10[a]".
+Example 4:
+
+Input: "aabcaabcd"
+Output: "2[aabc]d"
+Explanation: "aabc" occurs twice, so one answer can be "2[aabc]d".
+Example 5:
+
+Input: "abbbabbbcabbbabbbc"
+Output: "2[2[abbb]c]"
+Explanation: "abbbabbbc" occurs twice, but "abbbabbbc" can also be encoded to "2[abbb]c", so one answer can be "2[2[abbb]c]".
+ class Solution {
+public:
+    string encode(string s) {
+        int n = s.size();
+        vector<vector<string>> dp(n, vector<string>(n, ""));
+        for (int step = 1; step <= n; ++step) {
+            for (int i = 0; i + step - 1 < n; ++i) {
+                int j = i + step - 1;
+                dp[i][j] = s.substr(i, step);
+                string t = s.substr(i, j - i + 1), replace = "";
+                auto pos = (t + t).find(t, 1);
+                if (pos < t.size()) {
+                    replace = to_string(t.size() / pos) + "[" + dp[i][i + pos - 1] + "]";
+                    if (replace.size() < dp[i][j].size()) dp[i][j] = replace;
+                    continue;
+                }
+                for (int k = i; k < j; ++k) {
+                    string left = dp[i][k], right = dp[k + 1][j];
+                    if (left.size() + right.size() < dp[i][j].size()) {
+                        dp[i][j] = left + right;
+                    }
+                }
+            }
+        }
+        return dp[0][n - 1];
+    }
+};
+[LeetCode] Concatenated Words 连接的单词
+ 
+
+Given a list of words (without duplicates), please write a program that returns all concatenated words in the given list of words.
+
+A concatenated word is defined as a string that is comprised entirely of at least two shorter words in the given array.
+
+Example:
+
+Input: ["cat","cats","catsdogcats","dog","dogcatsdog","hippopotamuses","rat","ratcatdogcat"]
+
+Output: ["catsdogcats","dogcatsdog","ratcatdogcat"]
+
+Explanation: "catsdogcats" can be concatenated by "cats", "dog" and "cats"; 
+ "dogcatsdog" can be concatenated by "dog", "cats" and "dog"; 
+"ratcatdogcat" can be concatenated by "rat", "cat", "dog" and "cat".
+ 
+
+Note:
+
+The number of elements of the given array will not exceed 10,000
+The length sum of elements in the given array will not exceed 600,000.
+All the input string will only include lower case letters.
+The returned elements order does not matter.
+class Solution {
+public:
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        if (words.size() <= 2) return {};
+        vector<string> res;
+        unordered_set<string> dict(words.begin(), words.end());
+        for (string word : words) {
+            dict.erase(word);
+            int len = word.size();
+            if (len == 0) continue;
+            vector<bool> v(len + 1, false);
+            v[0] = true;
+            for (int i = 0; i < len + 1; ++i) {
+                for (int j = 0; j < i; ++j) {
+                    if (v[j] && dict.count(word.substr(j, i - j))) {
+                        v[i] = true;
+                        break;
+                    }
+                }
+            }
+            if (v.back()) res.push_back(word);
+            dict.insert(word);
+        }
+        return res;
+    }
+};
+class Solution {
+public:
+    vector<string> findAllConcatenatedWordsInADict(vector<string>& words) {
+        vector<string> res;
+        unordered_set<string> dict(words.begin(), words.end());
+        for (string word : words) {
+            int n = word.size();
+            if (n == 0) continue;
+            vector<bool> dp(n + 1, false);
+            dp[0] = true;
+            for (int i = 0; i < n; ++i) {
+                if (!dp[i]) continue;
+                for (int j = i + 1; j <= n; ++j) {
+                    if (j - i < n && dict.count(word.substr(i, j - i))) {
+                        dp[j] = true;
+                    }
+                }
+                if (dp[n]) {res.push_back(word); break;}
+            }
+        }
+        return res;
+    }
+};
+[LeetCode] Student Attendance Record II 学生出勤记录之二
+ 
+
+Given a positive integer n, return the number of all possible attendance records with length n, which will be regarded as rewardable. The answer may be very large, return it after mod 109 + 7.
+
+A student attendance record is a string that only contains the following three characters:
+
+ 
+
+'A' : Absent.
+'L' : Late.
+'P' : Present.
+A record is regarded as rewardable if it doesn't contain more than one 'A' (absent) or more than two continuous 'L' (late).
+
+Example 1:
+Input: n = 2
+Output: 8 
+Explanation:
+There are 8 records with length 2 will be regarded as rewardable:
+"PP" , "AP", "PA", "LP", "PL", "AL", "LA", "LL"
+Only "AA" won't be regarded as rewardable owing to more than one absent times. 
+class Solution {
+public:
+    int checkRecord(int n) {
+        int M = 1000000007;
+        int dp[n + 1][2][3] = {0};
+        for (int j = 0; j < 2; ++j) {
+            for (int k = 0; k < 3; ++k) {
+                dp[0][j][k] = 1;
+            }
+        }
+        for (int i = 1; i <= n; ++i) {
+            for (int j = 0; j < 2; ++j) {
+                for (int k = 0; k < 3; ++k) {
+                    int val = dp[i - 1][j][2];
+                    if (j > 0) val = (val + dp[i - 1][j - 1][2]) % M;
+                    if (k > 0) val = (val + dp[i - 1][j][k - 1]) % M;
+                    dp[i][j][k] = val;
+                }
+            }
+        }
+        return dp[n][1][2];
+    }
+};
+下面这种方法来自大神KJer的帖子，大神帖子里面的讲解写的很详细，很赞，也不难读懂。定义了三个DP数组P, L, A，其中P[i]表示数组[0,i]范围内以P结尾的所有
+排列方式，L[i]表示数组[0,i]范围内以L结尾的所有排列方式，A[i]表示数组[0,i]范围内以A结尾的所有排列方式。那么最终我们所求的就是
+P[n-1] + L[n-1] + A[n-1]了。那么难点就是分别求出P, L, A数组的递推公式了。
+
+首先来看P数组的，P字符没有任何限制条件，可以跟在任何一个字符后面，所以有 P[i] = A[i-1] + P[i-1] + L[i-1]
+
+再来看L数组的，L字符唯一的限制条件是不能有超过两个连续的L，那么在P和L字符后面可以加1一个L，如果前一个字符是L，我们要看再前面的一位是什么字符，如果是
+P或着A的话，可以加L，如果是L的话，就不能再加了，否则就连续3个了，所以有 L[i] = A[i-1] + P[i-1] + A[i-2] + P[i-2]
+
+最后来看A数组的，这个比较麻烦，字符A的限制条件是整个字符串最多只能有1个A，那么当前一个字符是A的话，就不能再加A来，当前一个字符是P或者L的话，
+要确定之前从没有A出现过，才能加上A。那么实际上我们还需要定义两个数组P1, L1, 其中P1[i]表示数组[0,i]范围内以P结尾的不包含A的所有排列方式，L1[i]表示数
+组[0,i]范围内以L结尾的不包含A的所有排列方式，根据前两种情况我们不难推出P1和L1的递推公式，再加上A的递推公式如下：
+
+A[i] = P1[i-1] + L1[i-1]
+
+P1[i] = P1[i-1] + L1[i-1]
+
+L1[i] = P1[i-1] + P1[i-2]
+
+将第二第三个等式多次带入第一个等式，就可以将P1和L1消掉，可以化简为：
+
+A[i] = A[i-1] + A[i-2] + A[i-3]
+
+这样就可以少定义两个数组了，递推公式有了，代码也就不难写了：
+
+ class Solution {
+public:
+    int checkRecord(int n) {
+        int M = 1000000007;
+        vector<int> P(n), L(n), A(n);
+        P[0] = 1; L[0] = 1; L[1] = 3;
+        A[0] = 1; A[1] = 2; A[2] = 4;
+        for (int i = 1; i < n; ++i) {
+            P[i] = ((P[i - 1] + L[i - 1]) % M + A[i - 1]) % M;
+            if (i > 1) L[i] = ((A[i - 1] + P[i - 1]) % M + (A[i - 2] + P[i - 2]) % M) % M;
+            if (i > 2) A[i] = ((A[i - 1] + A[i - 2]) % M + A[i - 3]) % M;
+        }
+        return ((A[n - 1] + P[n - 1]) % M + L[n - 1]) % M;
+    }
+};
+class Solution {
+public:
+    int checkRecord(int n) {
+        int M = 1000000007;
+        vector<long long> P(n + 1), PorL(n + 1);
+        P[0] = 1; PorL[0] = 1; PorL[1] = 2;
+        for (int i = 1; i <= n; ++i) {
+            P[i] = PorL[i - 1];
+            if (i > 1) PorL[i] = (P[i] + P[i - 1] + P[i - 2]) % M;
+        }
+        long long res = PorL[n];
+        for (int i = 0; i < n; ++i) {
+            long long t = (PorL[i] * PorL[n - 1 - i]) % M;
+            res = (res + t) % M;
+        }
+        return res;
+    }
+};
+[LeetCode] Knight Probability in Chessboard 棋盘上骑士的可能性
+ 
+
+On an NxN chessboard, a knight starts at the r-th row and c-th column and attempts to make exactly K moves. 
+The rows and columns are 
+0 indexed, so the top-left square is (0, 0), and the bottom-right square is (N-1, N-1).
+
+A chess knight has 8 possible moves it can make, as illustrated below. Each move is two squares in a cardinal direction, then one square 
+in an orthogonal direction.
+Each time the knight is to move, it chooses one of eight possible moves uniformly at random (even if the piece would go off the chessboard) and moves there.
+
+The knight continues moving until it has made exactly K moves or has moved off the chessboard. Return the probability that the knight 
+remains on the board after it has stopped moving.
+
+Example:
+
+Input: 3, 2, 0, 0
+Output: 0.0625
+Explanation: There are two moves (to (1,2), (2,1)) that will keep the knight on the board.
+From each of those positions, there are also two moves that will keep the knight on the board.
+The total probability the knight stays on the board is 0.0625.
+ 
+
+Note:
+
+N will be between 1 and 25.
+K will be between 0 and 100.
+The knight always initially starts on the board.
+这道题给了我们一个大小为NxN国际象棋棋盘，上面有个骑士，相当于我们中国象棋中的马，能走‘日’字，给了我们一个起始位置，然后说允许我们走K步，问走完K步之
+后还能留在棋盘上的概率是多少。那么要求概率，我们必须要先分别求出分子和分母，其中分子是走完K步还在棋盘上的走法，分母是没有限制条件的总共的走法。那么
+分母最好算，每步走有8种跳法，那么K步就是8的K次方种了。关键是要求出分子，博主开始向的方法是以给定位置为起始点，然后进行BFS，每步遍历8种情况，遇到在
+棋盘上的就计数器加1，结果TLE了。上论坛看大家的解法，结果发现都是换了一个角度来解决问题的，并不很关心骑士的起始位置，而是把棋盘上所有位置上经过K步还
+留在棋盘上的走法总和都算出来，那么最后直接返回需要的值即可。跟之前那道Out of Boundary Paths没啥本质上的区别，又是换了一个马甲就不会了系列。还是要用
+DP来做，我们可以用三维DP数组，也可以用二维DP数组来做，这里为了省空间，我们就用二维DP数组来做，其中dp[i][j]表示在棋盘(i, j)位置上走完当前步骤还留
+在棋盘上的走法总和，初始化为1，我们其实将步骤这个维度当成了时间维度在不停更新。好，下面我们先写出8种‘日’字走法的位置的坐标，就像之前遍历迷宫上下
+左右四个方向坐标一样，这不过这次位置变了而已。然后我们一步一步来遍历，每一步都需要完整遍历一遍棋盘的每个位置，新建一个临时数组t，大小和dp数组相同，
+但是初始化为0，然后对于遍历到的棋盘上的每一个格子，我们都遍历8中解法，如果新的位置不在棋盘上了，直接跳过，否则就加上上一步中的dp数组中对应的值，
+遍历完棋盘后，将dp数组更新为这个临时数组t，参见代码如下：
+class Solution {
+public:
+    double knightProbability(int N, int K, int r, int c) {
+        if (K == 0) return 1;
+        vector<vector<double>> dp(N, vector<double>(N, 1));
+        vector<vector<int>> dirs{{-1,-2},{-2,-1},{-2,1},{-1,2},{1,2},{2,1},{2,-1},{1,-2}};
+        for (int m = 0; m < K; ++m) {
+            vector<vector<double>> t(N, vector<double>(N, 0));
+            for (int i = 0; i < N; ++i) {
+                for (int j = 0; j < N; ++j) {
+                    for (auto dir : dirs) {
+                        int x = i + dir[0], y = j + dir[1];
+                        if (x < 0 || x >= N || y < 0 || y >= N) continue;
+                        t[i][j] += dp[x][y];
+                    }
+                }
+            }
+            dp = t;
+        }
+        return dp[r][c] / pow(8, K);
+    }
+};
+class Solution {
+public:
+    vector<vector<int>> dirs{{-1,-2},{-2,-1},{-2,1},{-1,2},{1,2},{2,1},{2,-1},{1,-2}};
+    double knightProbability(int N, int K, int r, int c) {
+        vector<vector<vector<double>>> memo(K + 1, vector<vector<double>>(N, vector<double>(N, 0.0)));
+        return helper(memo, N, K, r, c) / pow(8, K);
+    }
+    double helper(vector<vector<vector<double>>>& memo, int N, int k, int r, int c) {
+        if (k == 0) return 1.0;
+        if (memo[k][r][c] != 0.0) return memo[k][r][c];
+        for (auto dir : dirs) {
+            int x = r + dir[0], y = c + dir[1];
+            if (x < 0 || x >= N || y < 0 || y >= N) continue;
+            memo[k][r][c] += helper(memo, N, k - 1, x, y);
+        }
+        return memo[k][r][c];
+    }
+};
+[LeetCode] Partition to K Equal Sum Subsets 分割K个等和的子集
+ 
+
+Given an array of integers nums and a positive integer k, find whether it's possible to divide this array into knon-empty subsets whose sums are all equal.
+
+Example 1:
+
+Input: nums = [4, 3, 2, 3, 5, 2, 1], k = 4
+Output: True
+Explanation: It's possible to divide it into 4 subsets (5), (1, 4), (2,3), (2,3) with equal sums.
+ 
+
+Note:
+
+1 <= k <= len(nums) <= 16.
+0 < nums[i] < 10000.
+class Solution {
+public:
+    bool canPartitionKSubsets(vector<int>& nums, int k) {
+        int sum = accumulate(nums.begin(), nums.end(), 0);
+        if (sum % k != 0) return false;
+        sort(nums.begin(), nums.end(), greater<int>());
+        vector<bool> visited(nums.size(), false);
+        return helper(nums, k, sum / k, 0, 0, visited);
+    }
+    bool helper(vector<int>& nums, int k, int target, int start, int curSum, vector<bool>& visited) {
+        if (k == 1) return true;
+        if (curSum > target) return false;
+        if (curSum == target) return helper(nums, k - 1, target, 0, 0, visited);  
+        for (int i = start; i < nums.size(); ++i) {
+            if (visited[i]) continue;
+            visited[i] = true;
+            if (helper(nums, k, target, i + 1, curSum + nums[i], visited)) return true;
+            visited[i] = false;
+        }
+        return false;
+    }
+};
+class Solution {
+public:
+    bool canPartitionKSubsets(vector<int>& nums, int k) {
+        int sum = accumulate(nums.begin(), nums.end(), 0);
+        if (sum % k != 0) return false;
+        vector<int> v(k, 0);
+        sort(nums.begin(), nums.end());
+        return helper(nums, sum / k, v, (int)nums.size() - 1);
+    }
+    bool helper(vector<int>& nums, int target, vector<int>& v, int idx) {
+        if (idx == -1) {
+            for (int t : v) {
+                if (t != target) return false;
+            }
+            return true;
+        }
+        int num = nums[idx];
+        for (int i = 0; i < v.size(); ++i) {
+            if (v[i] + num > target) continue;
+            v[i] += num;
+            if (helper(nums, target, v, idx - 1)) return true;
+            v[i] -= num;
+        }
+        return false;
+    }
+};
+[LeetCode] 727. Minimum Window Subsequence 最小窗口序列
+ 
+
+Given strings S and T, find the minimum (contiguous) substring W of S, so that T is a subsequence of W.
+
+If there is no such window in S that covers all characters in T, return the empty string "". If there are multiple such minimum-length windows, return the one with the left-most starting index.
+
+Example 1:
+
+Input: 
+S = "abcdebdde", T = "bde"
+Output: "bcde"
+Explanation: 
+"bcde" is the answer because it occurs before "bdde" which has the same length.
+"deb" is not a smaller window because the elements of T in the window must occur in order.
+ 
+
+Note:
+
+All the strings in the input will only contain lowercase letters.
+The length of S will be in the range [1, 20000].
+The length of T will be in the range [1, 100].
+
+class Solution {
+public:
+    string minWindow(string S, string T) {
+        int m = S.size(), n = T.size(), start = -1, minLen = INT_MAX;
+        vector<vector<int>> dp(m + 1, vector<int>(n + 1, -1));
+        for (int i = 0; i <= m; ++i) dp[i][0] = i;
+        for (int i = 1; i <= m; ++i) {
+            for (int j = 1; j <= min(i, n); ++j) {
+                dp[i][j] = (S[i - 1] == T[j - 1]) ? dp[i - 1][j - 1] : dp[i - 1][j];
+            }
+            if (dp[i][n] != -1) {
+                int len = i - dp[i][n];
+                if (minLen > len) {
+                    minLen = len;
+                    start = dp[i][n];
+                }
+            }
+        }
+        return (start != -1) ? S.substr(start, minLen) : "";
+    }
+};
+class Solution {
+public:
+    string minWindow(string S, string T) {
+        int m = S.size(), n = T.size(), start = -1, minLen = INT_MAX, i = 0, j = 0;
+        while (i < m) {
+            if (S[i] == T[j]) {
+                if (++j == n) {
+                    int end = i + 1;
+                    while (--j >= 0) {
+                        while (S[i--] != T[j]);
+                    }
+                    ++i; ++j;
+                    if (end - i < minLen) {
+                        minLen = end - i;
+                        start = i;
+                    }
+                }
+            }
+            ++i;
+        }
+        return (start != -1) ? S.substr(start, minLen) : "";
+    }
+};
+[LeetCode] Cheapest Flights Within K Stops K次转机内的最便宜的航班
+ 
+
+There are n cities connected by m flights. Each fight starts from city u and arrives at v with a price w.
+
+Now given all the cities and fights, together with starting city src and the destination dst, your task is to find the cheapest price from src to dst with up to k stops. If there is no such route, output -1.
+
+Example 1:
+Input: 
+n = 3, edges = [[0,1,100],[1,2,100],[0,2,500]]
+src = 0, dst = 2, k = 1
+Output: 200
+Explanation: 
+The graph looks like this:
+The cheapest price from city 
+0
+ to city 
+2
+ with at most 1 stop costs 200, as marked red in the picture.
+Example 2:
+Input: 
+n = 3, edges = [[0,1,100],[1,2,100],[0,2,500]]
+src = 0, dst = 2, k = 0
+Output: 500
+Explanation: 
+The graph looks like this:
+The cheapest price from city 
+0
+ to city 
+2
+ with at most 0 stop costs 500, as marked blue in the picture.
+Note:
+
+The number of nodes n will be in range [1, 100], with nodes labeled from 0 to n - 1.
+The size of flights will be in range [0, n * (n - 1) / 2].
+The format of each flight will be (src, dst, price).
+The price of each flight will be in the range [1, 10000].
+k is in the range of [0, n - 1].
+There will not be any duplicated flights or self cycles.
+
+class Solution {
+public:
+    int findCheapestPrice(int n, vector<vector<int>>& flights, int src, int dst, int K) {
+        int res = INT_MAX;
+        unordered_map<int, vector<vector<int>>> m;
+        unordered_set<int> visited{{src}};
+        for (auto flight : flights) {
+            m[flight[0]].push_back({flight[1], flight[2]});
+        }
+        helper(m, src, dst, K, visited, 0, res);
+        return (res == INT_MAX) ? -1 : res;
+    }
+    void helper(unordered_map<int, vector<vector<int>>>& m, int cur, int dst, int K, unordered_set<int>& visited, int out, int& res) {
+        if (cur == dst) {res = out; return;}
+        if (K < 0) return;
+        for (auto a : m[cur]) {
+            if (visited.count(a[0]) || out + a[1] > res) continue;
+            visited.insert(a[0]);
+            helper(m, a[0], dst, K - 1, visited, out + a[1], res);
+            visited.erase(a[0]);
+        }
+    }
+};
+class Solution {
+public:
+    int findCheapestPrice(int n, vector<vector<int>>& flights, int src, int dst, int K) {
+        int res = INT_MAX, cnt = 0;
+        unordered_map<int, vector<vector<int>>> m;
+        queue<vector<int>> q{{{src, 0}}};
+        for (auto flight : flights) {
+            m[flight[0]].push_back({flight[1], flight[2]});
+        }
+        while (!q.empty()) {
+            for (int i = q.size(); i > 0; --i) {
+                auto t = q.front(); q.pop();
+                if (t[0] == dst) res = min(res, t[1]);
+                for (auto a : m[t[0]]) {
+                    if (t[1] + a[1] > res) continue;
+                    q.push({a[0], t[1] + a[1]});
+                }
+            }
+            if (cnt++ > K) break;
+        }
+        return (res == INT_MAX) ? -1 : res;
+    }
+};
+class Solution {
+public:
+    int findCheapestPrice(int n, vector<vector<int>>& flights, int src, int dst, int K) {
+        vector<int> dp(n, 1e9);
+        dp[src] = 0;
+        for (int i = 0; i <= K; ++i) {
+            vector<int> t = dp;
+            for (auto x : flights) {
+                t[x[1]] = min(t[x[1]], dp[x[0]] + x[2]);
+            }
+            dp = t;
+        }
+        return (dp[dst] >= 1e9) ? -1 : dp[dst];
+    }
+};
+[LeetCode] Race Car 赛车
+ 
+
+Your car starts at position 0 and speed +1 on an infinite number line.  (Your car can go into negative positions.)
+
+Your car drives automatically according to a sequence of instructions A (accelerate) and R (reverse).
+
+When you get an instruction "A", your car does the following: position += speed, speed *= 2.
+
+When you get an instruction "R", your car does the following: if your speed is positive then speed = -1 , otherwise speed = 1.  (Your position stays the same.)
+
+For example, after commands "AAR", your car goes to positions 0->1->3->3, and your speed goes to 1->2->4->-1.
+
+Now for some target position, say the length of the shortest sequence of instructions to get there.
+
+Example 1:
+Input: 
+target = 3
+Output: 2
+Explanation: 
+The shortest instruction sequence is "AA".
+Your position goes from 0->1->3.
+Example 2:
+Input: 
+target = 6
+Output: 5
+Explanation: 
+The shortest instruction sequence is "AAARA".
+Your position goes from 0->1->3->7->7->6.
+ 
+
+Note:
+
+1 <= target <= 10000.
+class Solution {
+public:
+    int racecar(int target) {
+        vector<int> dp(target + 1);
+        for (int i = 1; i <= target; ++i) {
+            dp[i] = INT_MAX;
+            int j = 1, cnt1 = 1;
+            for (; j < i; j = (1 << ++cnt1) - 1) {
+                for (int k = 0, cnt2 = 0; k < j; k = (1 << ++cnt2) - 1) {
+                    dp[i] = min(dp[i], cnt1 + 1 + cnt2 + 1 + dp[i - (j - k)]);
+                }
+            }
+            dp[i] = min(dp[i], cnt1 + (i == j ? 0 : 1 + dp[j - i]));
+        }
+        return dp[target];
+    }
+};
+class Solution {
+public:
+    int racecar(int target) {
+        vector<int> dp(target + 1, -1);
+        dp[0] = 0;
+        return helper(target, dp);
+    }
+    int helper(int i, vector<int>& dp) {
+        if (dp[i] >= 0) return dp[i];
+        dp[i] = INT_MAX;
+        int j = 1, cnt1 = 1;
+        for (; j < i; j = (1 << ++cnt1) - 1) {
+            for (int k = 0, cnt2 = 0; k < j; k = (1 << ++cnt2) - 1) {
+                dp[i] = min(dp[i], cnt1 + 1 + cnt2 + 1 + helper(i - (j - k), dp));
+            }
+        }
+        dp[i] = min(dp[i], cnt1 + (i == j ? 0 : 1 + helper(j - i, dp)));
+        return dp[i];
+    }
+};
+[LeetCode] 837. New 21 Game 新二十一点游戏
+ 
+
+Alice plays the following game, loosely based on the card game "21".
+
+Alice starts with 0 points, and draws numbers while she has less than K points.  During each draw, she gains an integer number of points randomly from the range [1, W], where W is an integer.  Each draw is independent and the outcomes have equal probabilities.
+
+Alice stops drawing numbers when she gets K or more points.  What is the probability that she has N or less points?
+
+Example 1:
+
+Input: N = 10, K = 1, W = 10
+Output: 1.00000
+Explanation:  Alice gets a single card, then stops.
+Example 2:
+
+Input: N = 6, K = 1, W = 10
+Output: 0.60000
+Explanation:  Alice gets a single card, then stops.
+In 6 out of W = 10 possibilities, she is at or below N = 6 points.
+Example 3:
+
+Input: N = 21, K = 17, W = 10
+Output: 0.73278
+Note:
+
+0 <= K <= N <= 10000
+1 <= W <= 10000
+Answers will be accepted as correct if they are within 10^-5 of the correct answer.
+The judging time limit has been reduced for this question.
+ class Solution {
+public:
+    double new21Game(int N, int K, int W) {
+        if (K == 0 || N >= K + W) return 1.0;
+        vector<double> sum(K + W);
+        sum[0] = 1.0;
+        for (int i = 1; i < K + W; ++i) {
+            int t = min(i - 1, K - 1);
+            if (i <= W) sum[i] = sum[i - 1] + sum[t] / W;
+            else sum[i] = sum[i - 1] + (sum[t] - sum[i - W - 1]) / W;
+        }
+        return (sum[N] - sum[K - 1]) / (sum[K + W - 1] - sum[K - 1]);
+    }
+};
+class Solution {
+public:
+    double new21Game(int N, int K, int W) {
+        if (K == 0 || N >= K + W) return 1.0;
+        vector<double> dp(K + W);
+        dp[0] = 1.0;
+        for (int i = 1; i < K + W; ++i) {
+            dp[i] = dp[i - 1];
+            if (i <= W) dp[i] += dp[i - 1] / W;
+            else dp[i] += (dp[i - 1] - dp[i - W - 1]) / W;
+            if (i > K) dp[i] -= (dp[i - 1] - dp[K - 1]) / W;
+        }
+        return dp[N] - dp[K - 1];
+    }
+};
+847. Shortest Path Visiting All Nodes
+An undirected, connected graph of N nodes (labeled 0, 1, 2, ..., N-1) is given as graph.
+
+graph.length = N, and j != i is in the list graph[i] exactly once, if and only if nodes i and j are connected.
+
+Return the length of the shortest path that visits every node. You may start and stop at any node, you may revisit nodes multiple times, and you may reuse edges.
+
+ 
+
+Example 1:
+
+Input: [[1,2,3],[0],[0],[0]]
+Output: 4
+Explanation: One possible path is [1,0,2,0,3]
+Example 2:
+
+Input: [[1],[0,2,4],[1,3,4],[2],[1,2]]
+Output: 4
+Explanation: One possible path is [0,1,4,2,3]
+ 
+
+Note:
+
+1 <= graph.length <= 12
+0 <= graph[i].length < graph.length
+class Solution {
+    public int shortestPathLength(int[][] graph) {
+        int N = graph.length;
+        int dist[][] = new int[1 << N][N];
+        for (int[] row: dist) Arrays.fill(row, N*N);
+        for (int x = 0; x < N; ++x) dist[1<<x][x] = 0;
+
+        for (int cover = 0; cover < 1 << N; ++cover) {
+            boolean repeat = true;
+            while (repeat) {
+                repeat = false;
+                for (int head = 0; head < N; ++head) {
+                    int d = dist[cover][head];
+                    for (int next: graph[head]) {
+                        int cover2 = cover | (1 << next);
+                        if (d + 1 < dist[cover2][next]) {
+                            dist[cover2][next] = d+1;
+                            if (cover == cover2) repeat = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        int ans = N*N;
+        for (int cand: dist[(1<<N) - 1])
+            ans = Math.min(cand, ans);
+        return ans;
+    }
+}
+[LeetCode] Random Pick with Weight 根据权重随机取点
+ 
+
+Given an array w of positive integers, where w[i] describes the weight of index i, write a function pickIndex which randomly picks an index in proportion to its weight.
+
+Note:
+
+1 <= w.length <= 10000
+1 <= w[i] <= 10^5
+pickIndex will be called at most 10000 times.
+Example 1:
+
+Input: 
+["Solution","pickIndex"]
+[[[1]],[]]
+Output: [null,0]
+Example 2:
+
+Input: 
+["Solution","pickIndex","pickIndex","pickIndex","pickIndex","pickIndex"]
+[[[1,3]],[],[],[],[],[]]
+Output: [null,0,1,1,1,0]
+class Solution {
+public:
+    Solution(vector<int> w) {
+        sum = w;
+        for (int i = 1; i < w.size(); ++i) {
+            sum[i] = sum[i - 1] + w[i];
+        }
+    }
+    
+    int pickIndex() {
+        int x = rand() % sum.back(), left = 0, right = sum.size() - 1;
+        while (left < right) {
+            int mid = left + (right - left) / 2;
+            if (sum[mid] <= x) left = mid + 1;
+            else right = mid;
+        }
+        return right;
+    }
+    
+private:
+    vector<int> sum;
+};
+class Solution {
+public:
+    Solution(vector<int> w) {
+        sum = w;
+        for (int i = 1; i < w.size(); ++i) {
+            sum[i] = sum[i - 1] + w[i];
+        }
+    }
+    
+    int pickIndex() {
+        int x = rand() % sum.back();
+        return upper_bound(sum.begin(), sum.end(), x) - sum.begin();
+    }
+    
+private:
+    vector<int> sum;
+};
+935. Knight Dialer
+在如下的电话键盘的数字键上按照“马走日”的方式走N-1步，问最多能生成多少个不同的长度为N的数字。
+This time, we place our chess knight on any numbered key of a phone pad (indicated above), and the knight makes N-1 hops.  Each hop 
+must be from one key to another numbered key.
+
+Each time it lands on a key (including the initial placement of the knight), it presses the number of that key, pressing N digits total.
+
+How many distinct numbers can you dial in this manner?
+
+Since the answer may be large, output the answer modulo 10^9 + 7.
+
+ 
+
+Example 1:
+
+Input: 1
+Output: 10
+Example 2:
+
+Input: 2
+Output: 20
+Example 3:
+
+Input: 3
+Output: 46
+ 
+
+Note:
+
+1 <= N <= 5000
+class Solution {
+private:
+    long long int f[10][5005];
+
+public:
+    int knightDialer(int N) {
+        memset(f, -1, sizeof(f));
+        const long long int MOD = 1000000007;
+        long long int ans = 0;
+        for (int i = 0; i < 10; i++) f[i][0] = 1;
+        for (int i = 1; i < N; i++) {
+            f[0][i] = (f[4][i-1] + f[6][i-1]) % MOD;
+            f[1][i] = (f[6][i-1] + f[8][i-1]) % MOD;
+            f[2][i] = (f[7][i-1] + f[9][i-1]) % MOD;
+            f[3][i] = (f[4][i-1] + f[8][i-1]) % MOD;
+            f[4][i] = (f[0][i-1] + f[3][i-1] + f[9][i-1]) % MOD;
+            f[5][i] = 0;
+            f[6][i] = (f[0][i-1] + f[1][i-1] + f[7][i-1]) % MOD;
+            f[7][i] = (f[2][i-1] + f[6][i-1]) % MOD;
+            f[8][i] = (f[1][i-1] + f[3][i-1]) % MOD;
+            f[9][i] = (f[2][i-1] + f[4][i-1]) % MOD;
+        }
+        for (int i = 0; i < 10; i++)
+            ans = (ans + f[i][N-1]) % MOD;
+        return ans;
+    }
+};
+LeetCode 943. Find the Shortest Superstring
+Given an array A of strings, find any smallest string that contains each string in A as a substring.
+
+We may assume that no string in A is substring of another string in A.
+
+Example 1:
+
+Input: ["alex","loves","leetcode"]
+Output: "alexlovesleetcode"
+Explanation: All permutations of "alex","loves","leetcode" would also be accepted.
+Example 2:
+
+Input: ["catg","ctaagt","gcta","ttca","atgcatc"]
+Output: "gctaagttcatgcatc"
+Note:
+
+1 <= A.length <= 12
+1 <= A[i].length <= 20
+dp[s][i] = min(dp[s - 2^i][j] + g[j][i]) #将j加到i的后面
+**
+题意：给一个字符串序列，找到包含序列中所有字符串的最小的子串
+分析：
+*/
+
+class Solution {
+    public String shortestSuperstring(String[] A) {
+        int n = A.length;
+        int[][] graph = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                graph[i][j] = calCost(A, i, j);  //把j加到i后面的路径长度，即图中i->j的边长
+                graph[j][i] = calCost(A, j, i);
+            }
+        }
+        
+        int[][] dp = new int[1 << n][n];  //dp[s][i] ：表示访问了节点集合s，且最后一个节点是i的最短的路径
+        int[][] path = new int[1 << n][n];
+        int min = Integer.MAX_VALUE, last = -1;
+        
+        for (int state = 1; state < (1 << n); state++) {  //枚举所有的节点集合组成状态
+            Arrays.fill(dp[state], Integer.MAX_VALUE);
+            for (int node = 0; node < n; node++) {
+                if ((state & (1 << node)) > 0) { //判断node在不在节点集合中
+                    int leftState = state - (1 << node);  //剩下的节点集合
+                    if (leftState == 0) {  //如果只剩一个节点了，则当前长度就是node的长度
+                        dp[state][node] = A[node].length();
+                    } else {
+                        for (int k = 0; k < n; k++) {  //dp更新
+                            if (dp[leftState][k] != Integer.MAX_VALUE && 
+                                dp[leftState][k] + graph[k][node] < dp[state][node]) {  //如果访问过了leftState且经过k点的路径更小，则更
+                                dp[state][node] = dp[leftState][k] + graph[k][node];
+                                path[state][node] = k;
+                            }
+                        }
+                    }
+                }
+                if (state == (1 << n) - 1 && dp[state][node] < min) {
+                    min = dp[state][node];
+                    last = node;
+                }
+                //System.out.println(dp[state][node]);
+            }
+        }
+        //建立路径        
+        StringBuilder sb = new StringBuilder();
+        int cur = (1 << n) - 1;
+        Stack<Integer> stack = new Stack<>();
+        while (cur > 0) {
+            stack.push(last);
+            int temp = cur;
+            cur -= (1 << last);
+            last = path[temp][last];
+        }
+                
+        int i = stack.pop();
+        sb.append(A[i]);
+        while (!stack.isEmpty()) {
+            int j = stack.pop();
+            sb.append(A[j].substring(A[j].length() - graph[i][j]));
+            i = j;
+        }
+        return sb.toString();
+    }
+    
+    private int calCost(String[] A, int i, int j) {
+        for (int pos = 1; pos < A[i].length(); pos++) {
+            if (A[j].startsWith(A[i].substring(pos))) {
+                return A[j].length() - A[i].length() + pos;
+            }
+        }
+        return A[j].length();
+    }
+}
+【LeetCode】975. Odd Even Jump
+You are given an integer array A. From some starting index, you can make a series of jumps. The (1st, 3rd, 5th, …) jumps in the series are called odd numbered jumps, and the (2nd, 4th, 6th, …) jumps in the series are called even numbered jumps.
+
+You may from index i jump forward to index j (with i < j) in the following way:
+
+During odd numbered jumps (ie. jumps 1, 3, 5, …), you jump to the index j such that A[i] <= A[j] and A[j] is the smallest possible value. If there are multiple such indexes j, you can only jump to the smallest such index j.
+During even numbered jumps (ie. jumps 2, 4, 6, …), you jump to the index j such that A[i] >= A[j] and A[j] is the largest possible value. If there are multiple such indexes j, you can only jump to the smallest such index j.
+(It may be the case that for some index i, there are no legal jumps.)
+A starting index is good if, starting from that index, you can reach the end of the array (index A.length - 1) by jumping some number of times (possibly 0 or more than once.)
+Return the number of good starting indexes.
+
+Example 1:
+
+Input: [10,13,12,14,15]
+Output: 2
+Explanation: 
+From starting index i = 0, we can jump to i = 2 (since A[2] is the smallest among A[1], A[2], A[3], A[4] that is greater or equal to A[0]), then we can't jump any more.
+From starting index i = 1 and i = 2, we can jump to i = 3, then we can't jump any more.
+From starting index i = 3, we can jump to i = 4, so we've reached the end.
+From starting index i = 4, we've reached the end already.
+In total, there are 2 different starting indexes (i = 3, i = 4) where we can reach the end with some number of jumps.
+1
+2
+3
+4
+5
+6
+7
+8
+Example 2:
+
+Input: [2,3,1,1,4]
+Output: 3
+Explanation: 
+From starting index i = 0, we make jumps to i = 1, i = 2, i = 3:
+
+During our 1st jump (odd numbered), we first jump to i = 1 because A[1] is the smallest value in (A[1], A[2], A[3], A[4]) that is greater than or equal to A[0].
+
+During our 2nd jump (even numbered), we jump from i = 1 to i = 2 because A[2] is the largest value in (A[2], A[3], A[4]) that is less than or equal to A[1].  A[3] is also the largest value, but 2 is a smaller index, so we can only jump to i = 2 and not i = 3.
+
+During our 3rd jump (odd numbered), we jump from i = 2 to i = 3 because A[3] is the smallest value in (A[3], A[4]) that is greater than or equal to A[2].
+
+We can't jump from i = 3 to i = 4, so the starting index i = 0 is not good.
+
+In a similar manner, we can deduce that:
+From starting index i = 1, we jump to i = 4, so we reach the end.
+From starting index i = 2, we jump to i = 3, and then we can't jump anymore.
+From starting index i = 3, we jump to i = 4, so we reach the end.
+From starting index i = 4, we are already at the end.
+In total, there are 3 different starting indexes (i = 1, i = 3, i = 4) where we can reach the end with some number of jumps.
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+Example 3:
+
+Input: [5,1,3,4,2]
+Output: 3
+Explanation: 
+We can reach the end from starting indexes 1, 2, and 4.
+1
+2
+3
+4
+Note:
+
+1 <= A.length <= 20000
+0 <= A[i] < 100000
+--------------------- 
+class Solution {
+public:
+    int oddEvenJumps(vector<int>& A) {
+        const int N = A.size();
+        vector<bool> higher(N), lower(N);
+        // higher[i] means if we jump higher, can we get N - 1?
+        higher[N - 1] = lower[N - 1] = true;
+        int res = 1;
+        // map[i] means the pos of number i
+        map<int, int> m;
+        m[A[N - 1]] = N - 1;
+        for (int i = N - 2; i >= 0; --i) {
+            auto hi = m.lower_bound(A[i]);
+            auto lo = m.upper_bound(A[i]);
+            if (hi != m.end()) higher[i] = lower[hi->second];
+            if (lo != m.begin()) lower[i] = higher[(--lo)->second];
+            if (higher[i])
+                ++res;
+            m[A[i]] = i;
+        }
+        return res;
+    }
+};
+【LeetCode】978. Longest Turbulent Subarray
+A subarray A[i], A[i+1], ..., A[j] of A is said to be turbulent if and only if:
+
+For i <= k < j, A[k] > A[k+1] when k is odd, and A[k] < A[k+1] when k is even;
+OR, for i <= k < j, A[k] > A[k+1] when k is even, and A[k] < A[k+1] when k is odd.
+That is, the subarray is turbulent if the comparison sign flips between each adjacent pair of elements in the subarray.
+Return the length of a maximum size turbulent subarray of A.
+
+Example 1:
+
+Input: [9,4,2,10,7,8,8,1,9]
+Output: 5
+Explanation: (A[1] > A[2] < A[3] > A[4] < A[5])
+1
+2
+3
+Example 2:
+
+Input: [4,8,12,16]
+Output: 2
+1
+2
+Example 3:
+
+Input: [100]
+Output: 1
+1
+2
+Note:
+
+1 <= A.length <= 40000
+0 <= A[i] <= 10^9
+虫取法
+虫取法就是前后指针交替前进的方式。
+
+对于这个题来说，我们先固定左侧的指针left，然后把右侧指针right向右移动，我使用了isde来表示上一次的相邻数字的差的符号，每次把当前的相邻数字符号
+和上一次的进行判断。需要注意的是题目要求必须翻转，如果连续数字是相等的则不符合要求
+class Solution {
+public:
+    int maxTurbulenceSize(vector<int>& A) {
+        const int N = A.size();
+        if (N == 1) return 1;
+        int res = 1;
+        int left = 0, right = 1;
+        bool isde = false;
+        while (right < N) {
+            if (A[right] == A[right - 1]) {
+                left = right;
+                right++;
+            } else if (right - left == 1 || (A[right] - A[right - 1] < 0 != isde)) {
+                isde = A[right] - A[right - 1] < 0;
+                res = max(res, right - left + 1);
+                right ++;
+            } else {
+                left = right - 1;
+            }
+        }
+        return res;
+    }
+};
+[LeetCode] Minimum Cost to Merge Stones 混合石子的最小花费
+There are N piles of stones arranged in a row.  The i-th pile has stones[i] stones.
+
+A move consists of merging exactly K consecutive piles into one pile, and the cost of this move is equal to the total number of stones in these K piles.
+
+Find the minimum cost to merge all piles of stones into one pile.  If it is impossible, return -1.
+
+Example 1:
+
+Input: stones = [3,2,4,1], K = 2
+Output: 20
+Explanation:
+We start with [3, 2, 4, 1].
+We merge [3, 2] for a cost of 5, and we are left with [5, 4, 1].
+We merge [4, 1] for a cost of 5, and we are left with [5, 5].
+We merge [5, 5] for a cost of 10, and we are left with [10].
+The total cost was 20, and this is the minimum possible.
+
+Example 2:
+
+Input: stones = [3,2,4,1], K = 3
+Output: -1
+Explanation: After any merge operation, there are 2 piles left, and we can't merge anymore. So the task is impossible.
+
+Example 3:
+
+Input: stones = [3,5,1,2,6], K = 3
+Output: 25
+Explanation:
+We start with [3, 5, 1, 2, 6].
+We merge [5, 1, 2] for a cost of 8, and we are left with [3, 8, 6].
+We merge [3, 8, 6] for a cost of 17, and we are left with [17].
+The total cost was 25, and this is the minimum possible.
+
+Note:
+
+1 <= stones.length <= 30
+2 <= K <= 30
+1 <= stones[i] <= 100
+dp[i][j] = min(dp[i][j], dp[i][t] + dp[t + 1][j]); -> (i <= t < j)
+
+dp[i][j] += sums[j + 1] - sums[i]; -> if ((j - i) % (K - 1) == 0)
+class Solution {
+public:
+    int mergeStones(vector<int>& stones, int K) {
+        int n = stones.size();
+        if ((n - 1) % (K - 1) != 0) return -1;
+        vector<int> sums(n + 1);
+        vector<vector<int>> dp(n, vector<int>(n));
+        for (int i = 1; i < n + 1; ++i) {
+            sums[i] = sums[i - 1] + stones[i - 1];
+        }
+        for (int len = K; len <= n; ++len) {
+            for (int i = 0; i + len <= n; ++i) {
+                int j = i + len - 1;
+                dp[i][j] = INT_MAX;
+                for (int t = i; t < j; t += K - 1) {
+                    dp[i][j] = min(dp[i][j], dp[i][t] + dp[t + 1][j]);
+                }
+                if ((j - i) % (K - 1) == 0) {
+                    dp[i][j] += sums[j + 1] - sums[i];
+                }
+            }
+        }
+        return dp[0][n - 1];
+    }
+};
